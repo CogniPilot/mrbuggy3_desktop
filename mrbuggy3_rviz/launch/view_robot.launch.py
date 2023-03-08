@@ -6,7 +6,6 @@ from launch.actions import (DeclareLaunchArgument, GroupAction,
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-
 from launch_ros.actions import Node, PushRosNamespace
 
 
@@ -16,15 +15,10 @@ ARGUMENTS = [
         default_value='false',
         description='Use simulation (Gazebo) clock if true'),
     DeclareLaunchArgument(
-        'description',
-        default_value='false',
-        description='Launch mrbuggy3 description'
-    ),
-    DeclareLaunchArgument(
         'model',
         default_value='lidar',
         choices=['base', 'lidar'],
-        description='MR Buggy3'
+        description='model type'
     ),
     DeclareLaunchArgument(
         'namespace',
@@ -38,9 +32,17 @@ def generate_launch_description():
 
     pkg_mrbuggy3_rviz = get_package_share_directory('mrbuggy3_rviz')
     pkg_mrbuggy3_description = get_package_share_directory('mrbuggy3_description')
+    pkg_joy = get_package_share_directory('joy')
 
-    rviz2_config = PathJoinSubstitution(
-        [pkg_mrbuggy3_rviz, 'rviz', 'nav2', 'robot.rviz'])
+    rviz_config_arg = DeclareLaunchArgument(
+        'rviz_config',
+        default_value=PathJoinSubstitution(
+            [pkg_mrbuggy3_rviz, 'rviz', 'nav2', 'robot.rviz']),
+        description='Launch mrbuggy3 description'
+    )
+
+    rviz_config = LaunchConfiguration('rviz_config')
+
     description_launch = PathJoinSubstitution(
         [pkg_mrbuggy3_description, 'launch', 'robot_description.launch.py']
     )
@@ -50,10 +52,17 @@ def generate_launch_description():
     rviz = GroupAction([
         PushRosNamespace(namespace),
 
+        Node(package='joy',
+             executable='joy_node',
+             name='joy',
+             arguments=['-d', LaunchConfiguration('rviz_config')],
+             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+             output='screen'),
+
         Node(package='rviz2',
              executable='rviz2',
              name='rviz2',
-             arguments=['-d', rviz2_config],
+             arguments=['-d', LaunchConfiguration('rviz_config')],
              parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
              remappings=[
                 ('/tf', 'tf'),
@@ -69,10 +78,11 @@ def generate_launch_description():
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource([description_launch]),
                     launch_arguments=[('model', LaunchConfiguration('model'))],
-                    condition=IfCondition(LaunchConfiguration('description'))
+                    condition=IfCondition(LaunchConfiguration('robot_description'))
                 )])
     ])
 
     ld = LaunchDescription(ARGUMENTS)
+    ld.add_action(rviz_config_arg)
     ld.add_action(rviz)
     return ld
