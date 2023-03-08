@@ -21,6 +21,11 @@ ARGUMENTS = [
         description='model type'
     ),
     DeclareLaunchArgument(
+        'description',
+        default_value='false',
+        description='Launch mrbuggy3 description'
+    ),
+    DeclareLaunchArgument(
         'namespace',
         default_value='',
         description='Robot namespace'
@@ -78,7 +83,7 @@ def generate_launch_description():
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource([description_launch]),
                     launch_arguments=[('model', LaunchConfiguration('model'))],
-                    condition=IfCondition(LaunchConfiguration('robot_description'))
+                    condition=IfCondition(LaunchConfiguration('description'))
                 )])
     ])
 
