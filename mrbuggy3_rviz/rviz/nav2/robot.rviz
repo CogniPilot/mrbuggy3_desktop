@@ -58,7 +58,7 @@ Visualization Manager:
         Value: robot_description
       Enabled: true
       Links:
-        /link/rplidar_link/sensor/rplidar/scan:
+        /link/lidar_link/sensor/lidar/scan:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -76,7 +76,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        rplidar_link:
+        lidar_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -98,13 +98,13 @@ Visualization Manager:
           Value: true
         base_link:
           Value: true
-        link/rplidar_link/sensor/rplidar/scan:
+        link/lidar_link/sensor/lidar/scan:
           Value: true
         map:
           Value: true
         odom:
           Value: true
-        rplidar_link:
+        lidar_link:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -117,8 +117,8 @@ Visualization Manager:
             base_link:
               base_footprint:
                 {}
-              rplidar_link:
-                link/rplidar_link/sensor/rplidar/scan:
+              lidar_link:
+                link/lidar_link/sensor/lidar/scan:
                   {}
       Update Interval: 0
       Value: true

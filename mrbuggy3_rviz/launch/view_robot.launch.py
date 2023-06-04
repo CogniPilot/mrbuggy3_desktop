@@ -6,6 +6,7 @@ from launch.actions import (DeclareLaunchArgument, GroupAction,
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+
 from launch_ros.actions import Node, PushRosNamespace
 
 
@@ -14,80 +15,31 @@ ARGUMENTS = [
         'use_sim_time',
         default_value='false',
         description='Use simulation (Gazebo) clock if true'),
-    DeclareLaunchArgument(
-        'model',
-        default_value='lidar',
-        choices=['base', 'lidar'],
-        description='model type'
-    ),
-    DeclareLaunchArgument(
-        'description',
-        default_value='false',
-        description='Launch mrbuggy3 description'
-    ),
-    DeclareLaunchArgument(
-        'namespace',
-        default_value='',
-        description='Robot namespace'
-    ),
 ]
 
 
 def generate_launch_description():
 
-    pkg_mrbuggy3_rviz = get_package_share_directory('mrbuggy3_rviz')
-    pkg_mrbuggy3_description = get_package_share_directory('mrbuggy3_description')
-    pkg_joy = get_package_share_directory('joy')
+    pkg_elm4_rviz = get_package_share_directory('elm4_rviz')
 
-    rviz_config_arg = DeclareLaunchArgument(
-        'rviz_config',
-        default_value=PathJoinSubstitution(
-            [pkg_mrbuggy3_rviz, 'rviz', 'nav2', 'robot.rviz']),
-        description='Launch mrbuggy3 description'
-    )
+    rviz2_config = PathJoinSubstitution(
+        [pkg_elm4_rviz, 'rviz', 'nav2', 'robot.rviz'])
 
-    rviz_config = LaunchConfiguration('rviz_config')
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', rviz2_config,
+                   "--ros-args", "--log-level", "fatal"],
+        parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static')
+        ],
+        output='log')
 
-    description_launch = PathJoinSubstitution(
-        [pkg_mrbuggy3_description, 'launch', 'robot_description.launch.py']
-    )
-
-    namespace = LaunchConfiguration('namespace')
-
-    rviz = GroupAction([
-        PushRosNamespace(namespace),
-
-        Node(package='joy',
-             executable='joy_node',
-             name='joy',
-             arguments=['-d', LaunchConfiguration('rviz_config')],
-             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
-             output='screen'),
-
-        Node(package='rviz2',
-             executable='rviz2',
-             name='rviz2',
-             arguments=['-d', LaunchConfiguration('rviz_config')],
-             parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
-             remappings=[
-                ('/tf', 'tf'),
-                ('/tf_static', 'tf_static')
-             ],
-             output='screen'),
-
-        # Delay launch of robot description to allow Rviz2 to load first.
-        # Prevents visual bugs in the model.
-        TimerAction(
-            period=3.0,
-            actions=[
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource([description_launch]),
-                    launch_arguments=[('model', LaunchConfiguration('model'))],
-                    condition=IfCondition(LaunchConfiguration('description'))
-                )])
-    ])
+    rviz_ld = TimerAction(period=10.0, actions=[rviz_node])
 
     ld = LaunchDescription(ARGUMENTS)
-    ld.add_action(rviz_config_arg)
-    ld.add_action(rviz)
+    ld.add_action(rviz_ld)
     return ld
